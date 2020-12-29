@@ -409,6 +409,7 @@ func (bot *CQBot) friendRequestEvent(c *client.QQClient, e *client.NewFriendRequ
 		"time":         time.Now().Unix(),
 		"self_id":      c.Uin,
 	})
+	bot.CQProcessFriendRequest(flag, true)
 }
 
 func (bot *CQBot) friendAddedEvent(c *client.QQClient, e *client.NewFriendEvent) {
@@ -437,6 +438,7 @@ func (bot *CQBot) groupInvitedEvent(c *client.QQClient, e *client.GroupInvitedRe
 		"time":         time.Now().Unix(),
 		"self_id":      c.Uin,
 	})
+	bot.CQProcessGroupRequest(flag, "invite", "success", true)
 }
 
 func (bot *CQBot) groupJoinReqEvent(c *client.QQClient, e *client.UserJoinGroupRequest) {
