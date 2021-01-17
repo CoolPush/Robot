@@ -21,7 +21,6 @@ import (
 
 	"github.com/Mrs4s/MiraiGo/binary"
 	"github.com/Mrs4s/MiraiGo/message"
-	"github.com/Mrs4s/MiraiGo/utils"
 	"github.com/Mrs4s/go-cqhttp/global"
 	log "github.com/sirupsen/logrus"
 	"github.com/tidwall/gjson"
@@ -618,21 +617,7 @@ func (bot *CQBot) ToElement(t string, d map[string]string, group bool) (m interf
 		}
 		return &message.VoiceElement{Data: data}, nil
 	case "record":
-		f := d["file"]
-		data, err := global.FindFile(f, d["cache"], global.VOICE_PATH)
-		if err == global.ErrSyntax {
-			data, err = global.FindFile(f, d["cache"], global.VOICE_PATH_OLD)
-		}
-		if err != nil {
-			return nil, err
-		}
-		if !global.IsAMRorSILK(data) {
-			data, err = global.EncoderSilk(data)
-			if err != nil {
-				return nil, err
-			}
-		}
-		return &message.VoiceElement{Data: data}, nil
+		return nil, errors.New("不支持发送语音")
 	case "face":
 		id, err := strconv.Atoi(d["id"])
 		if err != nil {
@@ -782,50 +767,6 @@ func (bot *CQBot) ToElement(t string, d map[string]string, group bool) (m interf
 			return nil, errors.New("send cardimage faild")
 		}
 		return bot.makeShowPic(img, source, icon, minWidth, minHeight, maxWidth, maxHeight, group)
-	case "video":
-		cache := d["cache"]
-		if cache == "" {
-			cache = "1"
-		}
-		file, err := bot.makeImageOrVideoElem(d, true, group)
-		if err != nil {
-			return nil, err
-		}
-		v := file.(*LocalVideoElement)
-		if v.File == "" {
-			return v, nil
-		}
-		var data []byte
-		if cover, ok := d["cover"]; ok {
-			data, _ = global.FindFile(cover, cache, global.IMAGE_PATH)
-		} else {
-			_ = global.ExtractCover(v.File, v.File+".jpg")
-			data, _ = ioutil.ReadFile(v.File + ".jpg")
-		}
-		v.thumb = bytes.NewReader(data)
-		video, _ := os.Open(v.File)
-		defer video.Close()
-		_, err = video.Seek(4, io.SeekStart)
-		if err != nil {
-			return nil, err
-		}
-		var header = make([]byte, 4)
-		_, err = video.Read(header)
-		if !bytes.Equal(header, []byte{0x66, 0x74, 0x79, 0x70}) { // check file header ftyp
-			_, _ = video.Seek(0, io.SeekStart)
-			hash, _ := utils.ComputeMd5AndLength(video)
-			cacheFile := path.Join(global.CACHE_PATH, hex.EncodeToString(hash[:])+".mp4")
-			if global.PathExists(cacheFile) && cache == "1" {
-				goto ok
-			}
-			err = global.EncodeMP4(v.File, cacheFile)
-			if err != nil {
-				return nil, err
-			}
-		ok:
-			v.File = cacheFile
-		}
-		return v, nil
 	default:
 		return nil, errors.New("unsupported cq code: " + t)
 	}
